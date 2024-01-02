@@ -6,7 +6,7 @@ const {registerSchema,activationToken, passwordSchema,loginSchema, forgetPasswor
 const uploader = require('../../middlewares/uploader.middleware')
 
         // ******register user*******/
-router.post('/register',uploader.array('image'),validator(registerSchema),authCtrl.register)
+router.post('/register',uploader.single('image'),validator(registerSchema),authCtrl.register)
 router.get('/verify/:token',paramValidator(activationToken),authCtrl.verifyActivationToken)
 router.post('/activation/:token',paramValidator(activationToken),validator(passwordSchema),authCtrl.activateUser)
 
