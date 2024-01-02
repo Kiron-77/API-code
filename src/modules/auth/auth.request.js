@@ -15,20 +15,15 @@ const passwordSchema = Joi.object({
     confirmPassword:Joi.ref('password')
 })
 const loginSchema = Joi.object({
-    name:Joi.string().min(2).max(30).required(),
     email:Joi.string().email().required(),
     password:Joi.string().min(8).max(25).required()
     
 })
 const forgetPasswordSchema = Joi.object({
     email:Joi.string().email().required(),
-    setNewPassword:Joi.string().min(8).max(25).required(),
-    confirmPassword:Joi.ref('setNewPassword')
-
 })
 const setPasswordSchema = Joi.object({
     email:Joi.string().email().required(),
-    currentPassword:Joi.string().min(8).max(25).required(),
     newPassword:Joi.string().min(8).max(30).required(),
     confirmPassword:Joi.ref('newPassword')
 })
