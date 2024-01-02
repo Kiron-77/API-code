@@ -59,6 +59,7 @@ class authController {
 
     verifyActivationToken = (req, res, next) => {
         // Todo:verify token
+
         res.json({
             result: req.params,
             message: "params",
@@ -124,6 +125,7 @@ class authController {
     sendEmailForForgetPassword = (req, res, next) => {
         // Todo:get email for forget password
         // share reset token to registered account
+        // 
         res.json({
             ressult:req.body,
             message:"set new password successfully",

@@ -18,5 +18,5 @@ router.get('/logout',authCheck,authCtrl.logoutUser)
     /*****forget password */
 router.post('/forget-password',validator(forgetPasswordSchema),authCtrl.sendEmailForForgetPassword)
 router.get('/verify-password-token/:token',paramValidator(activationToken),authCtrl.verifyForgetPasswordToken)
-router.post('/set-password/:token',validator(setPasswordSchema),paramValidator(activationToken),authCtrl.updatePassword)
+router.post('/set-password/:token',paramValidator(activationToken),validator(passwordSchema),authCtrl.updatePassword)
 module.exports = router;
