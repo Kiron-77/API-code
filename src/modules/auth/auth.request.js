@@ -16,23 +16,20 @@ const passwordSchema = Joi.object({
 })
 const loginSchema = Joi.object({
     email:Joi.string().email().required(),
-    password:Joi.string().min(8).max(25).required()
+    password:Joi.string().required()
     
 })
-const forgetPasswordSchema = Joi.object({
-    email:Joi.string().email().required(),
-})
-const setPasswordSchema = Joi.object({
-    email:Joi.string().email().required(),
-    newPassword:Joi.string().min(8).max(30).required(),
-    confirmPassword:Joi.ref('newPassword')
-})
+// const forgetPasswordSchema = Joi.object({
+//     email:Joi.string().email().required(),
+// })
+// const setPasswordSchema = Joi.object({
+//     email:Joi.string().email().required(),
+//     newPassword:Joi.string().min(8).max(30).required(),
+//     confirmPassword:Joi.ref('newPassword')
+// })
 module.exports={
     registerSchema,
     activationToken,
     passwordSchema,
-    loginSchema,
-    forgetPasswordSchema,
-    setPasswordSchema
-    
+    loginSchema   
 }

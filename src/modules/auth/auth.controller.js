@@ -1,15 +1,15 @@
-const Joi = require('joi');
+// const Joi = require('joi');
+require('dotenv').config();
 const { randomString } = require('../../config/helpers.config');
-const EmailService = require("../common/mail/email.service");
-const { activationToken } = require('./auth.request');
+// const EmailService = require("../common/mail/email.service");
+// const {MongoClient} = require('mongodb');
+// const MongodbServices = require('../common/database/mongodb.service');
+const authSvc = require('./auth.service');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 class authController {
     // Todo:function
     register = async (req, res, next) => {
-        // Todo:User register
-        // validation
-        // Db store
-        // activation process
-        // response
         try {
             const payload = req.body;
             if (req.file) {
@@ -21,28 +21,9 @@ class authController {
             }
             payload.activationToken = randomString(100)
             payload.status = 'notactivated';
-            //email send
-            let dbStatus = true;
-            if (dbStatus) {
-                let link = "http://localhost:5173/activate" + payload.activationToken
-                let message = `dear ${payload.name},<br/>
-               <p> Your account hass been succesfully registered. Please the link below or 
-                copy paste the url in the browser to acctivate the account:</p>
-                <a href ="${link}">
-                </a>
-                <br />
-                Regards, <br />
-                System Admin<br />
-                <small>
-                    <em>Please do not reply to this email,</em>
-                </small>`
-                await (new EmailService())
-                    .sendEmail(payload.email, "Activate Your Account", message)
-
-            }
-
+            const dbStatus = await authSvc.registerUser(payload)
             res.json({
-                result: payload,
+                result: dbStatus,
                 message: "register data",
                 meta: null
             })
@@ -54,94 +35,151 @@ class authController {
                 meta: null
             })
         }
-
     }
 
-    verifyActivationToken = (req, res, next) => {
-        // Todo:verify token
-
-        res.json({
-            result: req.params,
-            message: "params",
-            meta: null
-
-        })
-    }
-    activateUser = (req, res, next) => {
-        // Todo:activation of the user
+    verifyActivationToken = async (req, res, next) => {
         try {
-            const success = true;
-            if (success) {
-                res.json({
-                    result: req.body,
-                    message: "Account Activated succesfully",
-                    meta: null
-                })
-            } else {
-                throw { code: 422, message: "Canot activated at this moment" }
-            }
-
+            let data = await authSvc.getUserByActivationToken(req.params.token)
+            res.json({
+                result: data,
+                message: "User Verified",
+                meta: null
+            })
         } catch (exception) {
+            console.log(exception)
             next(exception)
         }
     }
-    loginUser = (req, res, next) => {
+    activateUser = async (req, res, next) => {
+        try {
+            const userDetail = await authSvc.getUserByActivationToken(req.params.token)
+            const data = {
+                password: bcrypt.hashSync(req.body.password, 10),
+                activationToken: null,
+                status: "activated"
+            };
+            const response = await authSvc.updateUserById(userDetail._id, data)
+            res.json({
+                result: response,
+                message: "Your account has been updated successfully",
+                meta: null
+            })
+        } catch (exception) {
+            next(exception)
+        }
+
+    }
+    loginUser = async (req, res, next) => {
         // Todo:login process 
         try {
-            let user = {
-                name:"kiran",
-                email: "kiran@gmail.com",
-                password: "admin1234"
+            const { email, password } = req.body;
+            const userDetail = await authSvc.getSingleUserByFilter({ email })
+            if (!userDetail) {
+                throw { code: 422, message: "User does not exist", result: { email } }
             }
-           let success = user;
-            if (success) {
-                res.json({
-                    result: req.body,
-                    message: "login succesfully",
-                    meta: null
-                })
-            }else{
-                throw{code:422, message:"user login fails"}
+            if (userDetail && userDetail.status === 'activated') {
+                if (bcrypt.compareSync(password, userDetail.password)) {
+                    const token = jwt.sign({
+                        userId: userDetail._id
+                    }, process.env.JWT_SECRET, {
+                        expiresIn: "1  day",
+                        subject: `${userDetail._id}`
+                    })
+                    res.json({
+                        result: {
+                            token: token,
+                            type: "Bearer",
+                            userDetail: {
+                                userId:userDetail._id,
+                                name:userDetail.name,
+                                email:userDetail.email,
+                                role:userDetail.role
+                            }
+                        },
+                        message: "User logged in successfully",
+                        meta: null
+                    })
+                } else {
+                    throw { code: 422, message: "Credentiasl doesnot match" };
+                }
+            } else {
+                throw { code: 422, message: "User is not activated or is suspended", result: { email } }
             }
-
         } catch (exception) {
             next(exception)
         }
-    
 
     }
-    getLoggedinUser = (req, res, next) => {
-        // Todo:get login user
-        console.log("i am me")
+    getLoggedInUser = (req, res, next) => {
+        const loggedInUser = req.authUser
         res.json({
-            result: null,
-            message: "i am on route me",
+            result: loggedInUser,
+            message: "I am on me router",
             meta: null
         })
     }
     logoutUser = (req, res, next) => {
         // Todo:logout login user
     }
-    sendEmailForForgetPassword = (req, res, next) => {
-        // Todo:get email for forget password
-        // share reset token to registered account
-        // 
-        res.json({
-            ressult:req.body,
-            message:"set new password successfully",
-            meta:null
-        })
+    sendEmailForForgetPassword = async (req, res, next) => {
+        try {
+            const { email } = req.body;
+            const userDetail = await authSvc.getSingleUserByFilter({
+                email: email
+            })
+            if (!userDetail) {
+                throw { code: 422, message: "User doesnot exist", result: { email } }
+            } else {
+                await authSvc.sendForgetPasswordMail(userDetail)
+                res.json({
+                    result: null,
+                    message: "An email has been sent to the registered email.Please check your email for futher processing.",
+                    meta: null
+                })
+            }
+        } catch (exception) {
+            next(exception)
+        }
+
     }
-    verifyForgetPasswordToken = (req, res, next) => {
-        // Todo:set password for forget
+    verifyForgetPasswordToken = async (req, res, next) => {
+        try {
+            let userDetail = await authSvc.getSingleUserByFilter({ forgetPasswordToken: req.params.token })
+            if (userDetail) {
+                res.json({
+                    result: userDetail,
+                    message: "User does exist and verified",
+                    meta: null
+                })
+            } else {
+                throw { code: 422, message: "Token doesnot exist or expired" }
+            }
+
+        } catch (exception) {
+
+        }
     }
-    updatePassword = (req, res, next) => {
-        // Todo: set password for forget
-        res.json({
-            ressult:req.body,
-            message:"update password successfully",
-            meta:null
-        })
+    updatePassword = async (req, res, next) => {
+        try {
+            const userDetail = await authSvc.getSingleUserByFilter({ forgetPasswordToken: req.params.token })
+            if (!userDetail) {
+                throw { code: 422, message: "Token doesnot exist or expired" }
+            } else {
+                const data = {
+                    password: bcrypt.hashSync(req.body.password, 10),
+                    forgetPasswordToken: null,
+                    status: "activated"
+                };
+                const response = await authSvc.updateUserById(userDetail._id, data)
+                res.json({
+                    result: response,
+                    message: "Your password has been updated successfully",
+                    meta: null
+                })
+            }
+        } catch (exception) {
+            next(exception)
+        }
     }
 }
 const authCtrl = new authController()

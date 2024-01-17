@@ -1,6 +1,8 @@
 const express = require('express');
 const app = express();
+require('./db.config')
 const router = require('../routes/router')
+
 // const errorRoutes = require('./error.config')
 
 // body parser
