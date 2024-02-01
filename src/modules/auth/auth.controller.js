@@ -156,7 +156,7 @@ class authController {
             }
 
         } catch (exception) {
-
+            next(exception)
         }
     }
     updatePassword = async (req, res, next) => {

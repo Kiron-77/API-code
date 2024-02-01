@@ -4,7 +4,6 @@ class BannerService {
     transformRequest = (req, isEdit = false) => {
         const data = {
             ...req.body,
-            image: null
         }
         if (!isEdit && !req.file) {
             throw { code: 422, message: "Image is required", result: { image: "Image is required" } }

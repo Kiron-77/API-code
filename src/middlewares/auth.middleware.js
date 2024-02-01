@@ -4,12 +4,12 @@ const authSvc = require("../modules/auth/auth.service");
 const authCheck = async(req, res, next) => {
     try {
         let token;
-        if (req.headers.authorization ) {
-            token = req.headers.authorization
+        if (req.headers['authorization']) {
+            token = req.headers['authorization']
         } else {
             next({ code: 401, message: "Token not set" })
         }
-        token = (token.split(' ')).pop();
+        token = (token.split(" ")).pop();
         if(!token){
             next({code:401, message:"Empty token"})
         }

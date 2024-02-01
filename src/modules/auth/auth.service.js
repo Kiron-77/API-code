@@ -12,7 +12,7 @@ class AuthService {
             // const response = await this.db.collection('users').insertOne(data)
             let link = process.env.FRONTEND_URL+"/activate/" + data.activationToken
             let message = `dear ${user.name},<br/>
-                   <p> Your account hass been succesfully registered. Please the link below or 
+                   <p> Your account has been succesfully registered. Please the link below or 
                     copy paste the url in the browser to acctivate the account:</p>
                     <a href="${link}">${link}
                     </a>
